@@ -43,7 +43,7 @@ func quotationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(quotation.Usdbrl.Bid)
+	json.NewEncoder(w).Encode(quotation.Usdbrl)
 }
 
 func requestQuotation(currencySrc, currencyDst string) (*Quotation, error) {
