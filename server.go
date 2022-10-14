@@ -78,7 +78,7 @@ func requestQuotation(currencySrc, currencyDst string) (*Quotation, error) {
 		return nil, error
 	}
 
-	err = saveToDataBase(&q)
+	err = saveToDataBase(context.Background(), &q)
 	if error != nil {
 		return nil, error
 	}
@@ -86,7 +86,7 @@ func requestQuotation(currencySrc, currencyDst string) (*Quotation, error) {
 	return &q, nil
 }
 
-func saveToDataBase(quotation *Quotation) error {
+func saveToDataBase(ctx context.Context, quotation *Quotation) error {
 	os.Remove("sqlite-database.db")
 	file, err := os.Create("sqlite-database.db")
 	if err != nil {
@@ -101,10 +101,18 @@ func saveToDataBase(quotation *Quotation) error {
 	defer db.Close()
 
 	createTable(db)
-	err = insertQuotation(db, quotation.Usdbrl.Bid)
-	if err != nil {
-		return err
+
+	select {
+	case <-time.After(10 * time.Millisecond):
+		err = insertQuotation(db, quotation.Usdbrl.Bid)
+		if err != nil {
+			return err
+		}
+		log.Println("Insert Quotation successfully executed")
+	case <-ctx.Done():
+		log.Println("Failed to insertation Quotation")
 	}
+
 	displayQuotation(db)
 	return nil
 }
