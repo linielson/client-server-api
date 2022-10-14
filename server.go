@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -53,7 +55,14 @@ func quotationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func requestQuotation(currencySrc, currencyDst string) (*Quotation, error) {
-	res, err := http.Get("https://economia.awesomeapi.com.br/json/last/" + currencySrc + "-" + currencyDst)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://economia.awesomeapi.com.br/json/last/"+currencySrc+"-"+currencyDst, nil)
+	if err != nil {
+		return nil, err
+	}
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +71,7 @@ func requestQuotation(currencySrc, currencyDst string) (*Quotation, error) {
 	if error != nil {
 		return nil, error
 	}
+
 	var q Quotation
 	error = json.Unmarshal(body, &q)
 	if error != nil {
